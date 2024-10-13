@@ -1,9 +1,28 @@
 import { Request, Response } from "express";
-
-const register = async (req: Request, res: Response) => {
+import { registerTeacher } from "../services/teecherService";
+export const registerTeacherController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
+    const { name, email, password, className } = req.body;
+
+    if (!name || !email || !password || !className) {
+      res.status(400).json({ message: "All fields are required." });
+    }
+
+    const { teacher, newClass } = await registerTeacher(
+      { name, email, password } as any,
+      className
+    );
+
+    res.status(201).json({
+      message: "Teacher registered and class created successfully.",
+      teacher,
+      class: newClass,
+    });
   } catch (err) {
-    console.log(err);
+    res.status(500).json({ err });
   }
 };
 const getAllMyClassGrades = async (req: Request, res: Response) => {
