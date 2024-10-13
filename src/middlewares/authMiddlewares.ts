@@ -1,59 +1,51 @@
-import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { Request, Response, NextFunction } from "express";
 
-interface UserData {
-  role: string;
-  [key: string]: any;
-}
-
-export const onlyStudentsAndTeachers = async (
+export const authMiddleware = (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
+  const token = req.cookies.token;
+
+  if (!token) {
+    return res
+      .status(401)
+      .json({ message: "Access denied. No token provided." });
+  }
+
   try {
-    const token = req.cookies.token;
-    if (!token) {
-      res.status(401).send("Access denied. No token provided.");
-      return;
-    }
-
-    const userData = jwt.verify(token, process.env.TOKEN_SECRET!) as UserData;
-
-    if (userData.role !== "teacher" && userData.role !== "student") {
-      res.status(403).send("Access denied. Teachers and students only.");
-      return;
-    }
+    const decodedToken = jwt.verify(token, process.env.TOKEN_SECRET!);
     //@ts-ignore
-    req.user = userData;
+    req.user = decodedToken;
     next();
   } catch (error) {
-    res.status(400).send("Invalid token.");
+    res.status(400).json({ message: "Invalid token." });
   }
 };
 
-export const onlyTeachers = async (
+export const onlyTeachersMiddleware = (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
-  try {
-    const token = req.cookies.token;
-    if (!token) {
-      res.status(401).send("Access denied. No token provided.");
-      return;
-    }
-
-    const userData = jwt.verify(token, process.env.TOKEN_SECRET!) as UserData;
-
-    if (userData.role !== "teacher") {
-      res.status(403).send("Access denied. Teachers only.");
-      return;
-    }
-    //@ts-ignore
-    req.user = userData;
+) => {
+  //@ts-ignore
+  if (req.user && req.user.role === "teacher") {
     next();
-  } catch (error) {
-    res.status(400).send("Invalid token.");
+  } else {
+    res.status(403).json({ message: "Access denied. Teachers only." });
+  }
+};
+
+export const onlyStudents = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  //@ts-ignore
+  if (req.user && req.user.role === "student") {
+    next();
+  } else {
+    res.status(403).json({ message: "Access denied. Students only." });
   }
 };
