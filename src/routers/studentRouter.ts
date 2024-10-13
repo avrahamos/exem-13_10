@@ -1,10 +1,16 @@
 import { Router } from "express";
-import { registerStudentController } from "../controllers/studentConteoller";
+import {
+  getAllMyGrades,
+  getOneMyGrade,
+  registerStudentController,
+} from "../controllers/studentConteoller";
+import { onlyStudents } from "../middlewares/authMiddlewares";
+import { getMyGradeById } from "../services/studentService";
 
 const router = Router();
 
 router.post("/register", registerStudentController);
-router.get("/grades");
-router.get("/grade/:id");
+router.get("/grades", onlyStudents, getAllMyGrades);
+router.get("/grade/:id", onlyStudents, getOneMyGrade);
 
 export default router;
