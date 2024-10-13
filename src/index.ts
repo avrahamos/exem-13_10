@@ -5,7 +5,8 @@ import { specs, swaggerUi } from "../src/config/swagger config";
 import authRouter from "../src/routers/authRouter";
 import teecherRouter from "./routers/teecherRouter";
 import studentRouter from "./routers/studentRouter";
-
+import connectDB from "./config/dbConfig";
+connectDB();
 const app = express();
 const port = process.env.PORT || 3000;
 app.use(cookieParser());
