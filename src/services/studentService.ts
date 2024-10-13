@@ -1,6 +1,7 @@
 import { IStudent } from "../models/studentModel";
 import Student from "../models/studentModel";
 import Class from "../models/classModel";
+import Teacher from "../models/teecheModel";
 import bcrypt from "bcrypt";
 
 export const registerStudent = async (
@@ -33,8 +34,13 @@ export const registerStudent = async (
     existingClass.students.push(newStudent._id);
 
     await existingClass.save();
-
-    return newStudent;
+    const teacher = await Teacher.findById(existingClass.teacher);
+    if (teacher) {
+      //@ts-ignore
+      teacher.students.push(newStudent._id);
+      await teacher.save();
+      return newStudent;
+    }
   } catch (err) {
     console.log(err);
     throw new Error("Failed to register student.");

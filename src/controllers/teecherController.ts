@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { registerTeacher } from "../services/teecherService";
+import { addGradeToStudent } from "../services/teecherService";
+
 export const registerTeacherController = async (
   req: Request,
   res: Response
@@ -25,34 +27,47 @@ export const registerTeacherController = async (
     res.status(500).json({ err });
   }
 };
-const getAllMyClassGrades = async (req: Request, res: Response) => {
+export const getAllMyClassGrades = async (req: Request, res: Response) => {
   try {
   } catch (err) {
     console.log(err);
   }
 };
 
-const getOneGrade = async (req: Request, res: Response) => {
+export const getOneGrade = async (req: Request, res: Response) => {
   try {
   } catch (err) {
     console.log(err);
   }
 };
 
-const addGrade = async (req: Request, res: Response) => {
+export const addGrade = async (req: Request, res: Response): Promise<void> => {
   try {
+    const { studentId } = req.params;
+    const { subject, score } = req.body;
+
+    if (!subject || !score) {
+      res.status(400).json({ message: "Subject and score are required." });
+    } else {
+      const newGrade = { subject, score, dateEntered: new Date() };
+      const updatedStudent = await addGradeToStudent(studentId, newGrade);
+      res
+        .status(201)
+        .json({ message: "Grade added successfully", student: updatedStudent });
+    }
   } catch (err) {
-    console.log(err);
+    res.status(500).json({ err });
   }
 };
-const changeGrade = async (req: Request, res: Response) => {
+
+export const changeGrade = async (req: Request, res: Response) => {
   try {
   } catch (err) {
     console.log(err);
   }
 };
 
-const getEvgGrades = async (req: Request, res: Response) => {
+export const getEvgGrades = async (req: Request, res: Response) => {
   try {
   } catch (err) {
     console.log(err);
