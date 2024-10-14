@@ -1,16 +1,12 @@
 import { ITeacher } from "../models/teecheModel";
-import { authDto } from "../types/authDto";
 import Class from "../models/classModel";
 import Teacher from "../models/teecheModel";
 import bcrypt from "bcrypt";
 import { IGrade, IStudent } from "../models/studentModel";
 import Student from "../models/studentModel";
-import mongoose from "mongoose";
+import { Types } from "mongoose";
 
-export const createClassForTeacher = async (
-  teacher: ITeacher,
-  className: string
-) => {
+const createClassForTeacher = async (teacher: ITeacher, className: string) => {
   try {
     const existingClass = await Class.findOne({ name: className });
     if (existingClass) {
@@ -69,19 +65,19 @@ export const registerTeacher = async (
 };
 
 export const getMyClassGrades = async (
-  classId: string
+  teacherId: string
 ): Promise<IGrade[] | null> => {
   try {
-    const classWithStudents = await Class.findById(classId).populate(
+    const classData = await Class.findOne({ teacher: teacherId }).populate(
       "students"
     );
-    if (!classWithStudents) {
-      throw new Error("Class not found.");
+    if (!classData) {
+      return null;
     }
 
     const allGrades: IGrade[] = [];
 
-    for (const student of classWithStudents.students) {
+    for (const student of classData.students) {
       //@ts-ignore
       for (const grade of student.grades) {
         allGrades.push(grade);
@@ -119,14 +115,22 @@ export const getOneGradeByStudentId = async (
 
 export const addGradeToStudent = async (
   studentId: string,
+  teacherId: string,
   newGrade: IGrade
 ): Promise<IStudent | null> => {
   try {
-    const objectId = new mongoose.Types.ObjectId(studentId);
+    const classData = await Class.findOne({
+      teacher: new Types.ObjectId(teacherId),
+      students: new Types.ObjectId(studentId),
+    });
 
-    const student = await Student.findById(objectId.toString());
+    if (!classData) {
+      throw new Error("Class not found for this student.");
+    }
+
+    const student = await Student.findById(studentId);
     if (!student) {
-      throw new Error("Student not found.");
+      return null;
     }
 
     student.grades.push(newGrade);
@@ -134,7 +138,7 @@ export const addGradeToStudent = async (
 
     return student;
   } catch (err) {
-    console.log(err);
+    console.log("Error:", err);
     throw new Error("Failed to add grade to student.");
   }
 };
@@ -167,25 +171,51 @@ export const changeGradeToStudent = async (
 
 export const getAvgGrades = async (classId: string): Promise<number | null> => {
   try {
-    const classWithStudents = await Class.findById(classId).populate(
-      "students"
-    );
-    if (!classWithStudents) {
-      throw new Error("Class not found.");
+    const result = await Class.aggregate([
+      {
+        $match: { _id: new Types.ObjectId(classId) },
+      },
+      {
+        $lookup: {
+          from: "students",
+          localField: "students",
+          foreignField: "_id",
+          as: "studentData",
+        },
+      },
+      {
+        $unwind: "$studentData",
+      },
+      {
+        $unwind: "$studentData.grades",
+      },
+      {
+        $group: {
+          _id: null,
+          totalGrades: { $sum: "$studentData.grades.score" },
+          numberOfGrades: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          averageGrade: {
+            // elif
+            $cond: {
+              if: { $gt: ["$numberOfGrades", 0] },
+              then: { $divide: ["$totalGrades", "$numberOfGrades"] },
+              else: null,
+            },
+          },
+        },
+      },
+    ]);
+
+    if (result.length > 0) {
+      return result[0].averageGrade;
     }
 
-    let totalGrades = 0;
-    let numberOfGrades = 0;
-
-    for (const student of classWithStudents.students) {
-      //@ts-ignore
-      for (const grade of student.grades) {
-        totalGrades += grade.score;
-        numberOfGrades++;
-      }
-    }
-
-    return numberOfGrades > 0 ? totalGrades / numberOfGrades : null;
+    return null;
   } catch (err) {
     console.log(err);
     throw new Error("Failed to calculate average grades.");

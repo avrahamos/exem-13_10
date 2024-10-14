@@ -9,13 +9,13 @@ export const loginController = async (
 
   try {
     if (!email || !password) {
-      res.status(400).json({ message: "Email and password are required." });
+      res.status(400).json({ msg: "Email and password are required" });
     }
 
-    const { token, role } = await authService.login(email, password);
+    const { token, role } = await authService.login(email, password, res);
 
-    res.cookie("token", token, { httpOnly: true }).status(200).json({
-      message: "Login successful",
+    res.status(200).json({
+      msg: "Login successful",
       role: role,
     });
   } catch (err) {
@@ -29,9 +29,9 @@ export const logoutController = async (
 ): Promise<void> => {
   try {
     res.clearCookie("token").status(200).json({
-      message: "Logout successful",
+      msg: "Logout successful",
     });
   } catch (error) {
-    res.status(500).json({ message: "Logout failed" });
+    res.status(500).json({ msg: "Logout failed" });
   }
 };
