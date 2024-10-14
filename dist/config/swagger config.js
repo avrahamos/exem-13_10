@@ -16,7 +16,7 @@ const options = {
             description: "A simple Express API with Swagger documentation",
         },
     },
-    apis: ["src/routers/*.js"],
+    apis: ["src/routers/*.ts"],
 };
 const specs = (0, swagger_jsdoc_1.default)(options);
 exports.specs = specs;

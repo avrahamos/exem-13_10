@@ -26,7 +26,8 @@ export const registerStudentController = async (
       student,
     });
   } catch (err) {
-    res.status(500).json({ err });
+    console.error("Validation Error:", err);
+    res.status(500).json({ message: err || "Server error" });
   }
 };
 

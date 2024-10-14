@@ -1,4 +1,5 @@
 import { Schema, model, Document } from "mongoose";
+import validator from "validator";
 
 export interface IGrade {
   subject: string;
@@ -22,7 +23,15 @@ const gradeSchema = new Schema<IGrade>({
 
 const studentSchema = new Schema<IStudent>({
   name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
+  email: {
+    type: String,
+    required: [true, "Email is required"],
+    unique: true,
+    validate: {
+      validator: (value: string) => validator.isEmail(value),
+      message: "Invalid email address",
+    },
+  },
   password: { type: String, required: true },
   classId: { type: Schema.Types.ObjectId, ref: "Class", required: true },
   grades: [gradeSchema],
